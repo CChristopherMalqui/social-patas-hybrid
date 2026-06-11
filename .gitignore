@@ -9,3 +9,7 @@ desktop.ini
 
 # Logs / temporales
 *.log
+
+# SQL y contexto del proyecto (solo local: no se despliega ni se versiona)
+database/
+contexto/
