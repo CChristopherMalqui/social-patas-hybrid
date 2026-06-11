@@ -65,6 +65,32 @@ body { padding: 0 16px 80px; }
 .me-name { font-size: 14px; font-weight: 600; color: #fff; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .me-logout { background: transparent; border: none; color: rgba(255,255,255,.8); cursor: pointer; padding: 2px 4px; font-size: 16px; display: inline-flex; transition: color .15s, transform .15s; }
 .me-logout:hover { color: #fff; transform: translateX(1px); }
+.admin-badge { font-size: 9.5px; font-weight: 800; letter-spacing: .08em; color: #fff; background: rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.4); padding: 2px 6px; border-radius: 999px; }
+
+/* ---------- Panel de admin ---------- */
+.admin-section .section-head h2 i { color: var(--accent); }
+.admin-body { padding: 4px 2px 8px; }
+.admin-h3 { font-size: 14px; font-weight: 600; margin: 18px 0 10px; display: flex; align-items: center; gap: 7px; color: var(--text-2); }
+.admin-h3 i { font-size: 16px; }
+.admin-global { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.admin-stat { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 8px; text-align: center; }
+.admin-stat .num { font-size: 22px; font-weight: 700; color: var(--accent); line-height: 1; }
+.admin-stat .lbl { font-size: 10.5px; margin-top: 4px; color: var(--text-2); text-transform: uppercase; letter-spacing: .03em; }
+.urow { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 8px; box-shadow: var(--shadow-card); animation: cardIn .3s both; }
+.urow .rank { font-size: 14px; width: 24px; text-align: center; flex-shrink: 0; }
+.urow .uinfo { min-width: 0; flex: 1; }
+.urow .uname { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.urow .uname .you { font-size: 9.5px; font-weight: 700; color: var(--accent-text); background: var(--accent-bg); padding: 1px 6px; border-radius: 999px; letter-spacing: .04em; }
+.urow .uemail { font-size: 12px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.urow .ucounts { display: flex; gap: 10px; font-size: 12px; color: var(--text-2); flex-shrink: 0; }
+.urow .ucounts b { color: var(--text); font-weight: 600; }
+.urow .purge { background: transparent; border: 1px solid var(--border-strong); color: var(--danger); font-family: inherit; font-size: 11px; padding: 5px 9px; border-radius: var(--radius-md); cursor: pointer; flex-shrink: 0; transition: background .15s, border-color .15s; }
+.urow .purge:hover { background: var(--accent-bg); border-color: var(--danger); }
+@media (max-width: 560px) {
+  .admin-global { grid-template-columns: repeat(2, 1fr); }
+  .urow { flex-wrap: wrap; }
+  .urow .ucounts { width: 100%; order: 3; }
+}
 
 /* ---------- Pantalla de login / registro ---------- */
 .auth-screen { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 20px; background: linear-gradient(150deg, #176030, #38a85c 50%, #0f4d26); background-size: 200% 200%; animation: heroShift 14s ease infinite; }
@@ -108,7 +134,7 @@ body { padding: 0 16px 80px; }
 /* ---------- Collapsible forms (smooth) ---------- */
 .form-collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .28s ease; }
 .form-collapse.open { grid-template-rows: 1fr; }
-.form-collapse > .form { overflow: hidden; min-height: 0; }
+.form-collapse > .form, .form-collapse > .admin-body { overflow: hidden; min-height: 0; }
 .form { background: var(--surface-2); border-radius: var(--radius-md); margin-bottom: 12px; }
 .form-inner { padding: 14px; }
 .form input, .form select, .form textarea { width: 100%; padding: 8px 10px; font-size: 14px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); font-family: inherit; color: var(--text); margin-bottom: 8px; outline: none; transition: border-color .15s, box-shadow .15s; }

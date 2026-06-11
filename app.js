@@ -21,7 +21,7 @@
   };
 
   // Estado en memoria. Se llena desde la base de datos en la nube.
-  var state = { plans: [], log: [], routes: [], me: '', userId: null };
+  var state = { plans: [], log: [], routes: [], me: '', userId: null, isAdmin: false, profiles: [] };
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
@@ -134,9 +134,9 @@
     });
   }
 
-  // Botón de borrar: solo aparece en lo que creó el usuario actual.
+  // Botón de borrar: aparece en lo propio, o en TODO si eres admin (moderación).
   function delBtn(attr, ownerId) {
-    if (ownerId !== state.userId) return '';
+    if (ownerId !== state.userId && !state.isAdmin) return '';
     return '<button class="del" data-' + attr + ' aria-label="eliminar"><i class="ti ti-x"></i></button>';
   }
 
@@ -223,24 +223,86 @@
       p.joining = p.plan_joins || [];
       return p;
     });
-    renderPlans(); renderStats();
+    renderPlans(); renderStats(); renderAdmin();
   }
 
   async function loadLog() {
     var res = await sb.from('logs').select('*').order('created', { ascending: false });
     if (res.error) { console.error(res.error); return; }
     state.log = res.data || [];
-    renderLog(); renderStats();
+    renderLog(); renderStats(); renderAdmin();
   }
 
   async function loadRoutes() {
     var res = await sb.from('routes').select('*').order('created', { ascending: false });
     if (res.error) { console.error(res.error); return; }
     state.routes = res.data || [];
-    renderRoutes(); renderStats();
+    renderRoutes(); renderStats(); renderAdmin();
   }
 
   function loadAll() { loadPlans(); loadLog(); loadRoutes(); }
+
+  /* ============================================================
+     ADMIN
+  ============================================================ */
+  async function checkAdmin() {
+    try {
+      var res = await sb.rpc('is_admin');
+      state.isAdmin = !res.error && res.data === true;
+    } catch (e) { state.isAdmin = false; }
+  }
+
+  async function loadAdmin() {
+    if (!state.isAdmin) return;
+    var res = await sb.from('profiles').select('*').order('created', { ascending: true });
+    if (res.error) { console.error(res.error); return; }
+    state.profiles = res.data || [];
+    renderAdmin();
+  }
+
+  function renderAdmin() {
+    if (!state.isAdmin) return;
+    var g = $('admin-global');
+    if (!g) return;
+
+    // Estadísticas globales (histórico completo)
+    g.innerHTML =
+      '<div class="admin-stat"><div class="num">' + state.profiles.length + '</div><div class="lbl">Usuarios</div></div>' +
+      '<div class="admin-stat"><div class="num">' + state.plans.length + '</div><div class="lbl">Planes (total)</div></div>' +
+      '<div class="admin-stat"><div class="num">' + state.log.length + '</div><div class="lbl">Entrenos</div></div>' +
+      '<div class="admin-stat"><div class="num">' + state.routes.length + '</div><div class="lbl">Rutas</div></div>';
+
+    // Conteo por usuario
+    var by = {};
+    state.profiles.forEach(function(u) { by[u.id] = { id: u.id, name: u.name || '—', email: u.email || '', plans: 0, logs: 0, routes: 0 }; });
+    function bump(arr, key) { arr.forEach(function(x) { if (by[x.user_id]) by[x.user_id][key]++; }); }
+    bump(state.plans, 'plans'); bump(state.log, 'logs'); bump(state.routes, 'routes');
+
+    // Ranking: más entrenos primero, luego más actividad total
+    var users = Object.keys(by).map(function(k) { return by[k]; });
+    users.sort(function(a, b) {
+      return (b.logs - a.logs) || ((b.plans + b.routes) - (a.plans + a.routes)) || a.name.localeCompare(b.name);
+    });
+
+    var medals = ['🥇', '🥈', '🥉'];
+    $('admin-users').innerHTML = users.map(function(u, i) {
+      var isMe = u.id === state.userId;
+      var rank = medals[i] || (i + 1);
+      return '<div class="urow">' +
+        '<span class="rank">' + rank + '</span>' +
+        '<div class="uinfo">' +
+          '<div class="uname">' + esc(u.name) + (isMe ? '<span class="you">TÚ</span>' : '') + '</div>' +
+          '<div class="uemail">' + esc(u.email) + '</div>' +
+        '</div>' +
+        '<div class="ucounts">' +
+          '<span title="Entrenos"><b>' + u.logs + '</b> 📓</span>' +
+          '<span title="Planes"><b>' + u.plans + '</b> 📅</span>' +
+          '<span title="Rutas"><b>' + u.routes + '</b> 📍</span>' +
+        '</div>' +
+        (isMe ? '' : '<button class="purge" data-purge="' + u.id + '">Limpiar</button>') +
+      '</div>';
+    }).join('');
+  }
 
   /* ============================================================
      Formularios desplegables
@@ -339,8 +401,24 @@
 
   function wireCardClicks() {
     document.body.addEventListener('click', async function(ev) {
-      var t = ev.target.closest('[data-join],[data-del-plan],[data-del-log],[data-del-route]');
+      var t = ev.target.closest('[data-join],[data-del-plan],[data-del-log],[data-del-route],[data-purge]');
       if (!t) return;
+
+      if (t.dataset.purge) {
+        if (!state.isAdmin) return;
+        var u = state.profiles.find(function(x) { return x.id === t.dataset.purge; });
+        var nombre = u ? u.name : 'este usuario';
+        if (!confirm('¿Borrar TODO el contenido de ' + nombre + '?\n(planes, anécdotas y rutas). No se puede deshacer.')) return;
+        var uid = t.dataset.purge;
+        await sb.from('plan_joins').delete().eq('user_id', uid);
+        await sb.from('plans').delete().eq('user_id', uid);
+        await sb.from('logs').delete().eq('user_id', uid);
+        await sb.from('routes').delete().eq('user_id', uid);
+        await Promise.all([loadPlans(), loadLog(), loadRoutes()]);
+        await loadAdmin();
+        toast('Contenido de ' + nombre + ' eliminado', 'ti-trash');
+        return;
+      }
 
       if (t.dataset.join) {
         var p = state.plans.find(function(x) { return x.id === t.dataset.join; });
@@ -392,6 +470,7 @@
       .on('postgres_changes', { event: '*', schema: 'public', table: 'plan_joins' }, loadPlans)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'logs' }, loadLog)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'routes' }, loadRoutes)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, loadAdmin)
       .subscribe();
   }
 
@@ -442,7 +521,7 @@
     $('auth-screen').hidden = false;
   }
 
-  function showApp(user) {
+  async function showApp(user) {
     state.userId = user.id;
     state.me = (user.user_metadata && user.user_metadata.display_name) || user.email.split('@')[0];
     $('me-name').textContent = state.me;
@@ -453,11 +532,25 @@
       appStarted = true;
       wireForms();
       wireCardClicks();
+      wireAdmin();
       subscribeRealtime();
       // Refresca las cuentas regresivas para que "en X min" siga al día
       setInterval(renderPlans, 60000);
     }
+    await checkAdmin();
+    $('admin-badge').hidden = !state.isAdmin;
+    $('admin-section').hidden = !state.isAdmin;
     loadAll();
+    loadAdmin();
+  }
+
+  function wireAdmin() {
+    $('admin-toggle').onclick = function() {
+      var panel = $('admin-panel');
+      var open = panel.classList.toggle('open');
+      this.classList.toggle('open', open);
+      this.textContent = open ? 'Ocultar' : 'Mostrar';
+    };
   }
 
   async function handleAuthSubmit() {

@@ -56,6 +56,7 @@
       <div class="me" id="me-box">
         <i class="ti ti-user" aria-hidden="true"></i>
         <span class="me-name" id="me-name"></span>
+        <span class="admin-badge" id="admin-badge" hidden>ADMIN</span>
         <button class="me-logout" id="logout-btn" title="Cerrar sesión" aria-label="Cerrar sesión"><i class="ti ti-logout"></i></button>
       </div>
     </div>
@@ -150,6 +151,22 @@
       </div></div>
     </div>
     <div id="route-list"></div>
+  </div>
+
+  <!-- ===================== PANEL DE ADMIN (solo visible para admin) ===================== -->
+  <div class="section admin-section" id="admin-section" hidden style="margin-top: 2rem;">
+    <hr class="divider" />
+    <div class="section-head" style="margin-top: 2rem;">
+      <h2><i class="ti ti-shield-lock"></i> Panel de admin</h2>
+      <button class="btn toggle-btn" id="admin-toggle">Mostrar</button>
+    </div>
+    <div class="form-collapse" id="admin-panel">
+      <div class="admin-body">
+        <div class="admin-global" id="admin-global"></div>
+        <h3 class="admin-h3"><i class="ti ti-users"></i> Usuarios registrados</h3>
+        <div id="admin-users"></div>
+      </div>
+    </div>
   </div>
 
   <p class="footer">Desarrollado por SYSTEMS DEV'S - CEO Christopher Malqui</p>
