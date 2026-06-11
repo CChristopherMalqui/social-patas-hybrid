@@ -158,7 +158,7 @@
         '<div class="meta">' + pill(p.type) +
         '<span>' + esc(fmtDate(p.date)) + (p.time ? ' · ' + esc(p.time) : '') + '</span>' +
         '<span class="countdown' + (cd.soon ? ' soon' : '') + '"><i class="ti ti-clock-hour-4"></i>' + esc(cd.label) + '</span>' +
-        '<span class="author">propuso ' + esc(p.author || 'alguien') + '</span>' +
+        '<span class="author">Propuso ' + esc(p.author || 'alguien') + '</span>' +
         delBtn('del-plan="' + p.id + '"', p.user_id) +
         '</div>' +
         (p.place ? '<div class="where">' + esc(p.place) + '</div>' : '') +
