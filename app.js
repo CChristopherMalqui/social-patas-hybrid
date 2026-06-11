@@ -21,7 +21,9 @@
   };
 
   // Estado en memoria. Se llena desde la base de datos en la nube.
-  var state = { plans: [], log: [], routes: [], me: '', userId: null, isAdmin: false, profiles: [] };
+  var state = { plans: [], log: [], routes: [], posts: [], me: '', userId: null, isAdmin: false, profiles: [] };
+  var pendingPhoto = null; // blob de la foto comprimida, lista para subir
+  var openComments = {};   // qué publicaciones tienen los comentarios abiertos
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
@@ -137,7 +139,7 @@
   // Botón de borrar: aparece en lo propio, o en TODO si eres admin (moderación).
   function delBtn(attr, ownerId) {
     if (ownerId !== state.userId && !state.isAdmin) return '';
-    return '<button class="del" data-' + attr + ' aria-label="eliminar"><i class="ti ti-x"></i></button>';
+    return '<button class="del" data-' + attr + ' aria-label="Eliminar"><i class="ti ti-x"></i></button>';
   }
 
   function renderPlans() {
@@ -165,7 +167,7 @@
         (p.notes ? '<div class="notes">' + esc(p.notes) + '</div>' : '') +
         '<div class="joiners">' +
           joining.map(function(j) { return '<span class="chip">' + esc(j.name) + '</span>'; }).join('') +
-          '<button class="join-btn ' + (isIn ? 'in' : '') + '" data-join="' + p.id + '">' + (isIn ? '− me bajo' : '+ me apunto') + '</button>' +
+          '<button class="join-btn ' + (isIn ? 'in' : '') + '" data-join="' + p.id + '">' + (isIn ? '− No llego' : '+ Si llego') + '</button>' +
         '</div>' +
       '</div>';
     }).join('');
@@ -240,7 +242,158 @@
     renderRoutes(); renderStats(); renderAdmin();
   }
 
-  function loadAll() { loadPlans(); loadLog(); loadRoutes(); }
+  function loadAll() { loadPlans(); loadLog(); loadRoutes(); loadPosts(); }
+
+  /* ============================================================
+     MURO (publicaciones con foto, 🔥 y comentarios)
+  ============================================================ */
+  function fileId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+  function publicUrl(path) {
+    return sb.storage.from('posts').getPublicUrl(path).data.publicUrl;
+  }
+
+  // Comprime y reescala la imagen en el navegador antes de subirla.
+  function compressImage(file, maxDim, quality) {
+    return new Promise(function(resolve, reject) {
+      var img = new Image();
+      img.onload = function() {
+        var w = img.width, h = img.height;
+        if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else if (h >= w && h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.toBlob(function(blob) {
+          URL.revokeObjectURL(img.src);
+          blob ? resolve(blob) : reject(new Error('No se pudo procesar la imagen'));
+        }, 'image/jpeg', quality);
+      };
+      img.onerror = function() { reject(new Error('Imagen inválida')); };
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  async function loadPosts() {
+    var res = await sb.from('posts')
+      .select('id, user_id, author, caption, image_path, created, post_reactions(user_id, name), post_comments(id, user_id, author, content, created)')
+      .order('created', { ascending: false });
+    if (res.error) { console.error(res.error); return; }
+    state.posts = (res.data || []).map(function(p) {
+      p.reactions = p.post_reactions || [];
+      p.comments = (p.post_comments || []).slice().sort(function(a, b) { return a.created.localeCompare(b.created); });
+      return p;
+    });
+    renderPosts(); renderAdmin();
+  }
+
+  function renderPosts() {
+    var el = $('post-list');
+    if (!el) return;
+    if (state.posts.length === 0) {
+      el.innerHTML = '<div class="empty">El muro está vacío. Sube la primera foto de la jauría.</div>';
+      return;
+    }
+    el.innerHTML = state.posts.map(function(p, i) {
+      var reacted = p.reactions.some(function(r) { return r.user_id === state.userId; });
+      var rc = p.reactions.length;
+      var cc = p.comments.length;
+      var comments = p.comments.map(function(c) {
+        var canDel = c.user_id === state.userId || state.isAdmin;
+        return '<div class="comment">' +
+          '<div class="c-body">' +
+            '<span class="c-author">' + esc(c.author || 'alguien') + '</span>' +
+            '<span class="c-time">' + esc(fmtRel(c.created)) + '</span>' +
+            '<div class="c-text">' + esc(c.content) + '</div>' +
+          '</div>' +
+          (canDel ? '<button class="c-del" data-del-comment="' + c.id + '" aria-label="borrar comentario"><i class="ti ti-x"></i></button>' : '') +
+        '</div>';
+      }).join('');
+      return '<div class="card" style="animation-delay:' + (i * 0.05) + 's">' +
+        '<div class="meta">' +
+          '<span class="author" style="margin-left:0">' + esc(p.author || 'alguien') + ' · ' + esc(fmtRel(p.created)) + '</span>' +
+          delBtn('del-post="' + p.id + '"', p.user_id) +
+        '</div>' +
+        '<img class="post-img" src="' + esc(publicUrl(p.image_path)) + '" alt="" loading="lazy" data-zoom="' + esc(publicUrl(p.image_path)) + '" />' +
+        (p.caption ? '<p class="post-caption">' + esc(p.caption) + '</p>' : '') +
+        '<div class="post-actions">' +
+          '<button class="react-btn ' + (reacted ? 'on' : '') + '" data-react="' + p.id + '">🔥 <span class="rcount">' + rc + '</span></button>' +
+          '<button class="comment-btn" data-comments="' + p.id + '"><i class="ti ti-message-circle"></i> ' + cc + '</button>' +
+        '</div>' +
+        '<div class="comments' + (openComments[p.id] ? ' open' : '') + '" id="comments-' + p.id + '">' +
+          comments +
+          '<div class="comment-form">' +
+            '<input type="text" id="cinput-' + p.id + '" placeholder="Escribe un comentario..." maxlength="500" />' +
+            '<button data-comment-send="' + p.id + '" aria-label="enviar"><i class="ti ti-send"></i></button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function wirePosts() {
+    $('post-toggle').onclick = function() { toggle('post-form'); };
+    $('post-cancel').onclick = function() { resetPostForm(); toggle('post-form', false); };
+
+    // Enviar comentario con Enter (los inputs se crean dinámicamente).
+    document.body.addEventListener('keydown', function(ev) {
+      var input = ev.target.closest && ev.target.closest('input[id^="cinput-"]');
+      if (input && ev.key === 'Enter') {
+        ev.preventDefault();
+        var btn = document.querySelector('[data-comment-send="' + input.id.slice(7) + '"]');
+        if (btn) btn.click();
+      }
+    });
+
+    $('post-file').onchange = async function() {
+      var file = this.files && this.files[0];
+      if (!file) return;
+      if (!/^image\//.test(file.type)) { toast('Elige una imagen', 'ti-photo'); return; }
+      try {
+        pendingPhoto = await compressImage(file, 1280, 0.8);
+        var img = $('post-preview-img');
+        img.src = URL.createObjectURL(pendingPhoto);
+        $('post-preview').hidden = false;
+        $('post-drop-text').textContent = 'Cambiar foto';
+      } catch (e) {
+        toast('No se pudo leer la imagen 😕', 'ti-alert-circle');
+        console.error(e);
+      }
+    };
+
+    $('post-save').onclick = async function(ev) {
+      if (!pendingPhoto) { toast('Primero elige una foto', 'ti-camera'); return; }
+      var btn = ev.currentTarget;
+      btn.disabled = true;
+      var path = state.userId + '/' + fileId() + '.jpg';
+      var up = await sb.storage.from('posts').upload(path, pendingPhoto, { contentType: 'image/jpeg', upsert: false });
+      if (up.error) { btn.disabled = false; toast('No se pudo subir la foto 😕', 'ti-alert-circle'); console.error(up.error); return; }
+      var ins = await sb.from('posts').insert({
+        user_id: state.userId, author: state.me,
+        caption: $('post-caption').value.trim() || null,
+        image_path: path
+      });
+      btn.disabled = false;
+      if (ins.error) {
+        await sb.storage.from('posts').remove([path]); // limpia si falló el registro
+        toast('No se pudo publicar 😕', 'ti-alert-circle'); console.error(ins.error); return;
+      }
+      resetPostForm();
+      toggle('post-form', false);
+      await loadPosts();
+      confettiFrom(btn);
+      toast('¡Foto publicada! 📸', 'ti-photo');
+    };
+  }
+
+  function resetPostForm() {
+    pendingPhoto = null;
+    $('post-file').value = '';
+    $('post-caption').value = '';
+    $('post-preview').hidden = true;
+    $('post-preview-img').src = '';
+    $('post-drop-text').textContent = 'Elige una foto';
+  }
 
   /* ============================================================
      ADMIN
@@ -274,9 +427,9 @@
 
     // Conteo por usuario
     var by = {};
-    state.profiles.forEach(function(u) { by[u.id] = { id: u.id, name: u.name || '—', email: u.email || '', plans: 0, logs: 0, routes: 0 }; });
+    state.profiles.forEach(function(u) { by[u.id] = { id: u.id, name: u.name || '—', email: u.email || '', plans: 0, logs: 0, routes: 0, photos: 0 }; });
     function bump(arr, key) { arr.forEach(function(x) { if (by[x.user_id]) by[x.user_id][key]++; }); }
-    bump(state.plans, 'plans'); bump(state.log, 'logs'); bump(state.routes, 'routes');
+    bump(state.plans, 'plans'); bump(state.log, 'logs'); bump(state.routes, 'routes'); bump(state.posts, 'photos');
 
     // Ranking: más entrenos primero, luego más actividad total
     var users = Object.keys(by).map(function(k) { return by[k]; });
@@ -296,6 +449,7 @@
         '</div>' +
         '<div class="ucounts">' +
           '<span title="Entrenos"><b>' + u.logs + '</b> 📓</span>' +
+          '<span title="Fotos"><b>' + u.photos + '</b> 📷</span>' +
           '<span title="Planes"><b>' + u.plans + '</b> 📅</span>' +
           '<span title="Rutas"><b>' + u.routes + '</b> 📍</span>' +
         '</div>' +
@@ -401,8 +555,77 @@
 
   function wireCardClicks() {
     document.body.addEventListener('click', async function(ev) {
-      var t = ev.target.closest('[data-join],[data-del-plan],[data-del-log],[data-del-route],[data-purge]');
+      var t = ev.target.closest('[data-join],[data-del-plan],[data-del-log],[data-del-route],[data-purge],[data-react],[data-comments],[data-comment-send],[data-del-comment],[data-del-post],[data-zoom]');
       if (!t) return;
+
+      // ----- Muro: ver foto en grande -----
+      if (t.dataset.zoom) {
+        var ov = document.createElement('div');
+        ov.className = 'lightbox';
+        var im = document.createElement('img');
+        im.src = t.dataset.zoom;
+        ov.appendChild(im);
+        ov.onclick = function() { ov.remove(); };
+        document.body.appendChild(ov);
+        return;
+      }
+
+      // ----- Muro: reacción 🔥 -----
+      if (t.dataset.react) {
+        var post = state.posts.find(function(x) { return x.id === t.dataset.react; });
+        if (!post) return;
+        var has = post.reactions.some(function(r) { return r.user_id === state.userId; });
+        if (has) {
+          await sb.from('post_reactions').delete().eq('post_id', post.id).eq('user_id', state.userId);
+        } else {
+          await sb.from('post_reactions').insert({ post_id: post.id, user_id: state.userId, name: state.me });
+          confettiFrom(t);
+        }
+        await loadPosts();
+        return;
+      }
+
+      // ----- Muro: abrir/cerrar comentarios -----
+      if (t.dataset.comments) {
+        var id = t.dataset.comments;
+        openComments[id] = !openComments[id];
+        var box = $('comments-' + id);
+        if (box) box.classList.toggle('open', openComments[id]);
+        return;
+      }
+
+      // ----- Muro: enviar comentario -----
+      if (t.dataset.commentSend) {
+        var pid = t.dataset.commentSend;
+        var input = $('cinput-' + pid);
+        var txt = input ? input.value.trim() : '';
+        if (!txt) { if (input) input.focus(); return; }
+        openComments[pid] = true;
+        var cins = await sb.from('post_comments').insert({ post_id: pid, user_id: state.userId, author: state.me, content: txt });
+        if (cins.error) { toast('No se pudo comentar 😕', 'ti-alert-circle'); console.error(cins.error); return; }
+        await loadPosts();
+        return;
+      }
+
+      // ----- Muro: borrar comentario -----
+      if (t.dataset.delComment) {
+        await sb.from('post_comments').delete().eq('id', t.dataset.delComment);
+        await loadPosts();
+        return;
+      }
+
+      // ----- Muro: borrar publicación (y su foto) -----
+      if (t.dataset.delPost) {
+        if (!confirm('¿Borrar esta publicación?')) return;
+        var pp = state.posts.find(function(x) { return x.id === t.dataset.delPost; });
+        removeWithAnim(t, async function() {
+          await sb.from('posts').delete().eq('id', t.dataset.delPost);
+          if (pp && pp.image_path) await sb.storage.from('posts').remove([pp.image_path]);
+          await loadPosts();
+          toast('Publicación eliminada', 'ti-trash');
+        });
+        return;
+      }
 
       if (t.dataset.purge) {
         if (!state.isAdmin) return;
@@ -470,6 +693,9 @@
       .on('postgres_changes', { event: '*', schema: 'public', table: 'plan_joins' }, loadPlans)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'logs' }, loadLog)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'routes' }, loadRoutes)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, loadPosts)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'post_reactions' }, loadPosts)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'post_comments' }, loadPosts)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, loadAdmin)
       .subscribe();
   }
@@ -532,6 +758,7 @@
       appStarted = true;
       wireForms();
       wireCardClicks();
+      wirePosts();
       wireAdmin();
       subscribeRealtime();
       // Refresca las cuentas regresivas para que "en X min" siga al día

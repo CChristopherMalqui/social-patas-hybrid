@@ -100,9 +100,36 @@
 
   <hr class="divider" />
 
+  <div class="section" id="wall-section" style="margin-top: 2rem;">
+    <div class="section-head">
+      <h2><i class="ti ti-photo"></i> Muro</h2>
+      <button class="btn toggle-btn" id="post-toggle">+ Publicar</button>
+    </div>
+    <div class="form-collapse" id="post-form">
+      <div class="form"><div class="form-inner">
+        <label class="file-drop" id="post-drop" for="post-file">
+          <i class="ti ti-camera"></i>
+          <span id="post-drop-text">Elige una foto</span>
+        </label>
+        <input type="file" id="post-file" accept="image/*" hidden />
+        <div class="post-preview" id="post-preview" hidden>
+          <img id="post-preview-img" alt="Vista previa" />
+        </div>
+        <textarea id="post-caption" placeholder="Escribe algo sobre la foto... (opcional)"></textarea>
+        <div class="form-actions">
+          <button class="btn" id="post-cancel">Cancelar</button>
+          <button class="btn btn-primary" id="post-save">Publicar</button>
+        </div>
+      </div></div>
+    </div>
+    <div id="post-list"></div>
+  </div>
+
+  <hr class="divider" />
+
   <div class="section" style="margin-top: 2rem;">
     <div class="section-head">
-      <h2><i class="ti ti-notebook"></i> ¿Como estuvo? Desahogate mi rey</h2>
+      <h2><i class="ti ti-notebook"></i> ¿Como estuvo? Escribe como te sientes aqui.</h2>
       <button class="btn toggle-btn" id="log-toggle">+ Escribir</button>
     </div>
     <div class="form-collapse" id="log-form">
