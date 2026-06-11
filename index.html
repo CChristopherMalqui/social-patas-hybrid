@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Social Patas Hybrid</title>
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" rel="stylesheet" />
+<link rel="icon" href="logoSPH.jpeg" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ===================== PANTALLA DE LOGIN / REGISTRO ===================== -->
+<div class="auth-screen" id="auth-screen" hidden>
+  <div class="auth-card">
+    <img class="auth-logo-img" src="logoSPH.jpeg" alt="Social Patas Hybrid" />
+    <h1>Social Patas Hybrid</h1>
+    <p class="auth-sub">Entra brother</p>
+
+    <div class="auth-form">
+      <div class="auth-field" id="auth-name-field" hidden>
+        <i class="ti ti-user"></i>
+        <input type="text" id="auth-name" placeholder="Tu nombre" autocomplete="name" />
+      </div>
+      <div class="auth-field">
+        <i class="ti ti-mail"></i>
+        <input type="email" id="auth-email" placeholder="Correo" autocomplete="email" />
+      </div>
+      <div class="auth-field">
+        <i class="ti ti-lock"></i>
+        <input type="password" id="auth-pass" placeholder="Contraseña" autocomplete="current-password" />
+      </div>
+      <button class="btn btn-primary auth-submit" id="auth-submit">Entrar</button>
+      <p class="auth-error" id="auth-error" hidden></p>
+    </div>
+
+    <p class="auth-switch">
+      <span id="auth-switch-text">¿No tienes cuenta?</span>
+      <button type="button" id="auth-switch-btn">Regístrate</button>
+    </p>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div class="wrap" id="app" hidden>
+  <header class="hero">
+    <div class="paws" id="paws" aria-hidden="true"></div>
+    <div class="hero-inner">
+      <div class="brand-group">
+        <img class="brand-logo" src="logoSPH.jpeg" alt="Social Patas Hybrid" />
+        <div class="brand">
+          <h1>Social Patas Hybrid</h1>
+          <p>Corremos, levantamos, caminamos — juntos.</p>
+        </div>
+      </div>
+      <div class="me" id="me-box">
+        <i class="ti ti-user" aria-hidden="true"></i>
+        <span class="me-name" id="me-name"></span>
+        <button class="me-logout" id="logout-btn" title="Cerrar sesión" aria-label="Cerrar sesión"><i class="ti ti-logout"></i></button>
+      </div>
+    </div>
+    <div class="stats" id="stats">
+      <div class="stat"><div class="num" data-stat="plans">0</div><div class="lbl">Esta semana</div></div>
+      <div class="stat"><div class="num" data-stat="logs">0</div><div class="lbl">Entrenos</div></div>
+      <div class="stat"><div class="num" data-stat="routes">0</div><div class="lbl">Rutas</div></div>
+      <div class="stat"><div class="num" data-stat="joins">0</div><div class="lbl">Apuntados</div></div>
+    </div>
+  </header>
+
+  <div class="section">
+    <div class="section-head">
+      <h2><i class="ti ti-calendar"></i> Esta semana</h2>
+      <button class="btn toggle-btn" id="plan-toggle">+ Proponer</button>
+    </div>
+    <div class="form-collapse" id="plan-form">
+      <div class="form"><div class="form-inner">
+        <div class="row">
+          <input type="date" id="plan-date" />
+          <input type="time" id="plan-time" />
+        </div>
+        <div class="row">
+          <select id="plan-type">
+            <option value="run">Running</option>
+            <option value="gym">Gym</option>
+            <option value="cali">Calistenia</option>
+            <option value="walk">Caminata</option>
+          </select>
+          <input type="text" id="plan-where" placeholder="Dónde" />
+        </div>
+        <textarea id="plan-notes" placeholder="Detalles opcionales: ritmo, qué llevar, punto de encuentro..."></textarea>
+        <div class="form-actions">
+          <button class="btn" id="plan-cancel">Cancelar</button>
+          <button class="btn btn-primary" id="plan-save">Guardar propuesta</button>
+        </div>
+      </div></div>
+    </div>
+    <div id="plan-list"></div>
+  </div>
+
+  <hr class="divider" />
+
+  <div class="section" style="margin-top: 2rem;">
+    <div class="section-head">
+      <h2><i class="ti ti-notebook"></i> ¿Como estuvo? Desahogate mi rey</h2>
+      <button class="btn toggle-btn" id="log-toggle">+ Escribir</button>
+    </div>
+    <div class="form-collapse" id="log-form">
+      <div class="form"><div class="form-inner">
+        <select id="log-type">
+          <option value="run">Running</option>
+          <option value="gym">Gym</option>
+          <option value="cali">Calistenia</option>
+          <option value="walk">Caminata</option>
+          <option value="other">Otro</option>
+        </select>
+        <textarea id="log-content" placeholder="¿Cómo estuvo? ¿Quiénes vinieron? Una anécdota, un momento, algo que aprendiste..."></textarea>
+        <div class="form-actions">
+          <button class="btn" id="log-cancel">Cancelar</button>
+          <button class="btn btn-primary" id="log-save">Publicar</button>
+        </div>
+      </div></div>
+    </div>
+    <div id="log-list"></div>
+  </div>
+
+  <hr class="divider" />
+
+  <div class="section" style="margin-top: 2rem;">
+    <div class="section-head">
+      <h2><i class="ti ti-map-pin"></i> Rutas y lugares</h2>
+      <button class="btn toggle-btn" id="route-toggle">+ Agregar</button>
+    </div>
+    <div class="form-collapse" id="route-form">
+      <div class="form"><div class="form-inner">
+        <input type="text" id="route-name" placeholder="Nombre del lugar o ruta" />
+        <div class="row">
+          <select id="route-type">
+            <option value="run">Running</option>
+            <option value="walk">Caminata</option>
+            <option value="gym">Gym</option>
+            <option value="cali">Calistenia</option>
+          </select>
+          <input type="text" id="route-dist" placeholder="Distancia o duración" />
+        </div>
+        <textarea id="route-notes" placeholder="Tips del lugar: cuándo ir, qué llevar, qué evitar..."></textarea>
+        <div class="form-actions">
+          <button class="btn" id="route-cancel">Cancelar</button>
+          <button class="btn btn-primary" id="route-save">Guardar</button>
+        </div>
+      </div></div>
+    </div>
+    <div id="route-list"></div>
+  </div>
+
+  <p class="footer">Desarrollado por SYSTEMS DEV'S - CEO Christopher Malqui</p>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<!-- Cliente de Supabase (CDN) + tu configuración + la app -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
