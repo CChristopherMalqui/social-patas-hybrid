@@ -12,14 +12,14 @@
 <body>
 <!--
   ============================================================
-   GUÍA RÁPIDA DE ESTE ARCHIVO (index.html = la ESTRUCTURA)
+   GUIA RAPIDA DE ESTE ARCHIVO (index.html = la ESTRUCTURA)
   ------------------------------------------------------------
-   • Aquí está el TEXTO y el ORDEN de la página.
-   • Los COLORES se cambian en  styles.css  (arriba del todo, en :root).
-   • La LÓGICA (qué hace cada botón) está en  app.js.
-   • Para cambiar un TÍTULO, busca el texto entre <h1>, <h2> o <h1 class="view-title">.
-   • Para cambiar un MENÚ (barra lateral), edita el texto de los .nav-item más abajo.
-   • Las pantallas están marcadas como <!-- VISTA: ... -->
+   - Aqui esta el TEXTO y el ORDEN de la pagina.
+   - Los COLORES se cambian en  styles.css  (arriba del todo, en :root).
+   - La LOGICA (que hace cada boton) esta en  app.js.
+   - Para cambiar un TITULO, busca el texto dentro de h1, h2 o view-title.
+   - Para cambiar un MENU (barra lateral), edita el texto de los .nav-item mas abajo.
+   - Cada pantalla empieza con un comentario "VISTA: ..."
   ============================================================
 -->
 
@@ -77,7 +77,7 @@
     <nav class="nav" id="nav">
       <button class="nav-item" data-view="semana"><i class="ti ti-calendar"></i> Esta semana</button>
       <button class="nav-item" data-view="muro"><i class="ti ti-photo"></i> Muro</button>
-      <button class="nav-item" data-view="bitacora"><i class="ti ti-notebook"></i> Bitácora</button>
+      <button class="nav-item" data-view="bitacora"><i class="ti ti-notebook"></i> Block de Patas</button>
       <button class="nav-item" data-view="rutas"><i class="ti ti-map-pin"></i> Rutas</button>
       <button class="nav-item" data-view="perfil"><i class="ti ti-user-circle"></i> Mi Perfil</button>
       <button class="nav-item" data-view="admin" id="nav-admin" hidden><i class="ti ti-shield-lock"></i> Admin</button>
@@ -172,11 +172,11 @@
       </div>
     </section>
 
-    <!-- ============ VISTA: Bitácora ============ -->
+    <!-- ============ VISTA: Block de Patas (antes "Bitácora") ============ -->
     <section class="view" id="view-bitacora" hidden>
       <div class="section">
         <div class="section-head">
-          <h2><i class="ti ti-notebook"></i> Escribe lo que necesites aquí</h2>
+          <h2><i class="ti ti-notebook"></i> Block de Patas</h2>
           <button class="btn toggle-btn" id="log-toggle">+ Escribir</button>
         </div>
         <div class="form-collapse" id="log-form">
@@ -245,7 +245,12 @@
           <h2><i class="ti ti-user-circle"></i> Mi Perfil</h2>
         </div>
         <div class="profile-card">
-          <div class="profile-avatar" id="profile-avatar">🐾</div>
+          <!-- Avatar: clic para subir/cambiar tu foto -->
+          <label class="profile-avatar-wrap" for="profile-avatar-file" title="Cambiar foto">
+            <div class="profile-avatar" id="profile-avatar">🐾</div>
+            <span class="avatar-edit"><i class="ti ti-camera"></i></span>
+          </label>
+          <input type="file" id="profile-avatar-file" accept="image/*" hidden />
           <div class="profile-form">
             <label class="field-label">Nombre</label>
             <input type="text" id="profile-name" placeholder="Tu nombre" />
@@ -276,6 +281,10 @@
             <p class="profile-since" id="profile-since"></p>
           </div>
         </div>
+
+        <!-- Mi actividad: todo lo que TÚ has subido (planes, fotos, block, rutas) -->
+        <h3 class="activity-title"><i class="ti ti-activity"></i> Mi actividad</h3>
+        <div id="profile-activity"></div>
       </div>
     </section>
 
@@ -296,6 +305,14 @@
     <!-- 👇 Pie de página (aparece abajo en todas las pantallas) -->
     <p class="footer">Desarrollado por SYSTEMS DEV'S - CEO Christopher Malqui</p>
   </main>
+</div>
+
+<!-- Perfil público (se abre al tocar el autor de una publicación) -->
+<div class="profile-modal" id="profile-modal" hidden>
+  <div class="profile-modal-card">
+    <button class="pm-close" id="pm-close" aria-label="Cerrar"><i class="ti ti-x"></i></button>
+    <div id="pm-body"></div>
+  </div>
 </div>
 
 <div class="toasts" id="toasts" aria-live="polite"></div>

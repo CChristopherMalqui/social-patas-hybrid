@@ -350,3 +350,58 @@ body { padding: 0; }
 @media (prefers-color-scheme: dark) {
   .nav-toggle { border-color: var(--border-strong); }
 }
+
+/* ============================================================
+   AVATARES, CABECERAS DE PUBLICACIÓN, ACTIVIDAD Y PERFIL PÚBLICO
+   ============================================================ */
+
+/* ---------- Avatar (foto de perfil reutilizable) ---------- */
+.avatar { border-radius: 50%; object-fit: cover; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-bg); color: var(--accent); font-weight: 700; }
+.avatar.avatar-ph { font-family: var(--font-sans); }
+.av-sm { width: 28px; height: 28px; font-size: 13px; }
+.av-md { width: 40px; height: 40px; font-size: 16px; }
+.av-lg { width: 84px; height: 84px; font-size: 34px; }
+
+/* ---------- Cabecera de publicación (avatar + nombre + tiempo) ---------- */
+.post-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.post-head { display: flex; align-items: center; gap: 10px; cursor: pointer; min-width: 0; border-radius: 999px; padding: 2px; transition: background .15s; }
+.post-head:hover { background: var(--surface-2); }
+.post-head .ph-info { min-width: 0; line-height: 1.2; }
+.post-head .ph-name { display: block; font-size: 14px; font-weight: 600; color: var(--text); }
+.post-head .ph-time { display: block; font-size: 12px; color: var(--text-3); }
+.post-top .del { margin-left: auto; }
+.author[data-profile] { cursor: pointer; }
+.author[data-profile]:hover { color: var(--accent); text-decoration: underline; }
+
+/* ---------- Avatar editable en Mi Perfil ---------- */
+.profile-avatar-wrap { position: relative; width: 84px; height: 84px; margin: 0 auto 18px; display: block; cursor: pointer; }
+.profile-avatar { width: 84px; height: 84px; border-radius: 50%; background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: 700; overflow: hidden; }
+.profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-edit { position: absolute; right: -2px; bottom: -2px; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 15px; border: 2px solid var(--surface); }
+
+/* ---------- Mi actividad / actividad en perfil ---------- */
+.activity-title { font-size: 16px; font-weight: 600; margin: 26px 0 12px; display: flex; align-items: center; gap: 8px; }
+.activity-title i { color: var(--accent); }
+.act-item { display: flex; gap: 11px; align-items: flex-start; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 11px 13px; margin-bottom: 8px; box-shadow: var(--shadow-card); animation: cardIn .3s both; }
+.act-icon { width: 34px; height: 34px; border-radius: 9px; background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.act-body { min-width: 0; flex: 1; }
+.act-kind { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; color: var(--text-3); }
+.act-text { font-size: 14px; color: var(--text); line-height: 1.45; word-wrap: break-word; }
+.act-time { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
+.act-thumb { width: 46px; height: 46px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+
+/* ---------- Modal de perfil público ---------- */
+.profile-modal { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; padding: 18px; animation: toastIn .2s ease both; }
+.profile-modal[hidden] { display: none; }
+.profile-modal-card { position: relative; width: 100%; max-width: 460px; max-height: 86vh; overflow-y: auto; background: var(--bg); border-radius: var(--radius-lg); padding: 24px 20px; box-shadow: var(--shadow-lift); animation: cardIn .3s cubic-bezier(.2,.7,.3,1) both; }
+.pm-close { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--surface-2); color: var(--text-2); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+.pm-close:hover { background: var(--border); }
+.pm-head { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; margin-bottom: 6px; }
+.pm-name { font-size: 20px; font-weight: 700; margin-top: 8px; }
+.pm-sub { font-size: 13px; color: var(--text-2); }
+.pm-section { font-size: 13px; font-weight: 600; color: var(--text-2); margin: 20px 0 10px; text-transform: uppercase; letter-spacing: .03em; }
+.pm-data { display: flex; flex-direction: column; gap: 8px; }
+.pm-row { display: flex; gap: 8px; font-size: 14px; }
+.pm-row .pm-label { color: var(--text-3); min-width: 92px; flex-shrink: 0; }
+.pm-row .pm-val { color: var(--text); word-break: break-word; }
+.pm-empty { font-size: 13px; color: var(--text-3); font-style: italic; font-family: var(--font-serif); }

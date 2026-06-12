@@ -36,7 +36,7 @@
     other: { label: 'Otro',       icon: 'ti-bolt' }
   };
 
-  var state = { plans: [], log: [], routes: [], posts: [], me: '', userId: null, isAdmin: false, profiles: [], profile: null };
+  var state = { plans: [], log: [], routes: [], posts: [], me: '', userId: null, authEmail: '', isAdmin: false, profiles: [], profilesById: {}, profile: null };
   var pendingPhoto = null;   // blob de la foto comprimida, lista para subir
   var openComments = {};     // qué publicaciones tienen los comentarios abiertos
   var commentDrafts = {};    // borradores de comentarios (no se pierden al refrescar)
@@ -77,6 +77,29 @@
   function pill(type) {
     var t = TYPES[type] || TYPES.other;
     return '<span class="pill"><i class="ti ' + t.icon + '" aria-hidden="true"></i> ' + t.label + '</span>';
+  }
+
+  /* ---------- Avatares ---------- */
+  function avatarUrl(path) { return path ? sb.storage.from('avatars').getPublicUrl(path).data.publicUrl : null; }
+  function avatarOf(uid) {
+    var pr = state.profilesById[uid] || {};
+    var name = pr.name || '';
+    return { url: pr.avatar_path ? avatarUrl(pr.avatar_path) : null, name: name, initial: (name || '?').trim().charAt(0).toUpperCase() || '🐾' };
+  }
+  function avatarHtml(uid, size) {
+    var a = avatarOf(uid);
+    if (a.url) return '<img class="avatar ' + (size || 'av-md') + '" src="' + esc(a.url) + '" alt="" />';
+    return '<span class="avatar avatar-ph ' + (size || 'av-md') + '">' + esc(a.initial) + '</span>';
+  }
+  // Cabecera "bonita" de una publicación: avatar + nombre + tiempo (clic = ver perfil).
+  function authorHead(uid, authorName, created) {
+    return '<div class="post-head" data-profile="' + uid + '">' +
+      avatarHtml(uid, 'av-md') +
+      '<div class="ph-info">' +
+        '<span class="ph-name">' + esc(authorName || 'alguien') + '</span>' +
+        '<span class="ph-time">' + esc(fmtRel(created)) + '</span>' +
+      '</div>' +
+    '</div>';
   }
 
   /* ---------- Toast ---------- */
@@ -157,7 +180,7 @@
         '<div class="meta">' + pill(p.type) +
         '<span>' + esc(fmtDate(p.date)) + (p.time ? ' · ' + esc(p.time) : '') + '</span>' +
         '<span class="countdown' + (cd.soon ? ' soon' : '') + '"><i class="ti ti-clock-hour-4"></i>' + esc(cd.label) + '</span>' +
-        '<span class="author">Propuso ' + esc(p.author || 'alguien') + '</span>' +
+        '<span class="author" data-profile="' + p.user_id + '">Propuso ' + esc(p.author || 'alguien') + '</span>' +
         delBtn('del-plan="' + p.id + '"', p.user_id) +
         '</div>' +
         (p.place ? '<div class="where">' + esc(p.place) + '</div>' : '') +
@@ -175,10 +198,11 @@
     if (state.log.length === 0) { el.innerHTML = '<div class="empty">La bitácora está en blanco. Después del próximo entreno, cuéntalo aquí.</div>'; return; }
     el.innerHTML = state.log.map(function (e, i) {
       return '<div class="card" style="animation-delay:' + (i * 0.05) + 's">' +
-        '<div class="meta">' + pill(e.type) +
-        '<span class="author">' + esc(e.author || 'alguien') + ' · ' + esc(fmtRel(e.created)) + '</span>' +
-        delBtn('del-log="' + e.id + '"', e.user_id) +
+        '<div class="post-top">' +
+          authorHead(e.user_id, e.author, e.created) +
+          delBtn('del-log="' + e.id + '"', e.user_id) +
         '</div>' +
+        '<div class="meta" style="margin:0 0 4px">' + pill(e.type) + '</div>' +
         '<p class="note-serif">' + esc(e.content) + '</p>' +
       '</div>';
     }).join('');
@@ -192,7 +216,7 @@
       return '<div class="card" style="animation-delay:' + (i * 0.05) + 's">' +
         '<div class="meta">' + pill(r.type) +
         (r.dist ? '<span>' + esc(r.dist) + '</span>' : '') +
-        '<span class="author">' + esc(r.author || 'alguien') + '</span>' +
+        '<span class="author" data-profile="' + r.user_id + '">' + esc(r.author || 'alguien') + '</span>' +
         delBtn('del-route="' + r.id + '"', r.user_id) +
         '</div>' +
         '<div class="where">' + esc(r.name) + '</div>' +
@@ -225,8 +249,8 @@
       }).join('');
       var draft = commentDrafts[p.id] || '';
       return '<div class="card" style="animation-delay:' + (i * 0.05) + 's">' +
-        '<div class="meta">' +
-          '<span class="author" style="margin-left:0">' + esc(p.author || 'alguien') + ' · ' + esc(fmtRel(p.created)) + '</span>' +
+        '<div class="post-top">' +
+          authorHead(p.user_id, p.author, p.created) +
           delBtn('del-post="' + p.id + '"', p.user_id) +
         '</div>' +
         '<img class="post-img" src="' + esc(publicUrl(p.image_path)) + '" alt="" loading="lazy" data-zoom="' + esc(publicUrl(p.image_path)) + '" />' +
@@ -518,20 +542,22 @@
   ============================================================ */
   async function loadProfile() {
     var res = await sb.from('profiles').select('*').eq('id', state.userId).single();
-    if (res.error) { console.error(res.error); return; }
-    state.profile = res.data;
+    if (!res.error && res.data) state.profile = res.data;
     fillProfile();
   }
   function fillProfile() {
     var p = state.profile || {};
-    $('profile-name').value = p.name || '';
-    $('profile-email').value = p.email || '';
+    // Los datos salen YA escritos (con respaldo del nombre/correo de la cuenta).
+    $('profile-name').value = p.name || state.me || '';
+    $('profile-email').value = p.email || state.authEmail || '';
     $('profile-phone').value = p.phone || '';
     $('profile-age').value = (p.age != null ? p.age : '');
     $('profile-sports').value = p.sports || '';
     $('profile-bio').value = p.bio || '';
-    var initial = (p.name || state.me || '').trim().charAt(0).toUpperCase();
-    $('profile-avatar').textContent = initial || '🐾';
+    var initial = (p.name || state.me || '').trim().charAt(0).toUpperCase() || '🐾';
+    $('profile-avatar').innerHTML = p.avatar_path
+      ? '<img src="' + esc(avatarUrl(p.avatar_path)) + '" alt="" />'
+      : esc(initial);
     if (p.created) $('profile-since').textContent = 'Miembro desde ' + new Date(p.created).toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
   }
   function wireProfile() {
@@ -577,10 +603,104 @@
       btn.disabled = false;
       state.profile = Object.assign({}, state.profile, upd);
       fillProfile();
+      loadProfiles(); // refresca nombre/avatar en todas las publicaciones
       confettiFrom(btn);
       if (!emailChanged) toast('Perfil actualizado ✅', 'ti-user-check');
     };
+
+    // Subir / cambiar foto de perfil (avatar).
+    $('profile-avatar-file').onchange = async function () {
+      var file = this.files && this.files[0];
+      if (!file || !/^image\//.test(file.type)) return;
+      var blob;
+      try { blob = await compressImage(file, 400, 0.82); }
+      catch (e) { toast('No se pudo leer la imagen 😕', 'ti-alert-circle'); return; }
+      var path = state.userId + '/' + fileId() + '.jpg';
+      var up = await sb.storage.from('avatars').upload(path, blob, { contentType: 'image/jpeg' });
+      if (up.error) { toast('No se pudo subir la foto 😕', 'ti-alert-circle'); console.error(up.error); return; }
+      var res = await sb.from('profiles').update({ avatar_path: path }).eq('id', state.userId);
+      if (res.error) { toast('No se pudo guardar la foto 😕', 'ti-alert-circle'); console.error(res.error); return; }
+      state.profile = Object.assign({}, state.profile, { avatar_path: path });
+      fillProfile();
+      loadProfiles();
+      toast('Foto de perfil actualizada 📸', 'ti-user-check');
+    };
   }
+
+  /* ============================================================
+     ACTIVIDAD (Mi actividad / actividad de un perfil)
+  ============================================================ */
+  function activityFor(uid) {
+    var items = [];
+    state.posts.forEach(function (p) { if (p.user_id === uid) items.push({ kind: 'post', created: p.created, data: p }); });
+    state.log.forEach(function (e) { if (e.user_id === uid) items.push({ kind: 'log', created: e.created, data: e }); });
+    state.plans.forEach(function (p) { if (p.user_id === uid) items.push({ kind: 'plan', created: p.created, data: p }); });
+    state.routes.forEach(function (r) { if (r.user_id === uid) items.push({ kind: 'route', created: r.created, data: r }); });
+    items.sort(function (a, b) { return String(b.created).localeCompare(String(a.created)); });
+    return items;
+  }
+  var ACT_ICON = { post: '📷', log: '📓', plan: '📅', route: '📍' };
+  var ACT_KIND = { post: 'Foto en el muro', log: 'Block de Patas', plan: 'Propuso entreno', route: 'Ruta' };
+  function actText(it) {
+    var d = it.data;
+    if (it.kind === 'post') return d.caption || 'Compartió una foto';
+    if (it.kind === 'log') return d.content;
+    if (it.kind === 'plan') return (TYPES[d.type] ? TYPES[d.type].label : '') + (d.place ? ' · ' + d.place : '') + ' · ' + fmtDate(d.date);
+    if (it.kind === 'route') return d.name;
+    return '';
+  }
+  function renderActivity(container, uid) {
+    if (!container) return;
+    var items = activityFor(uid);
+    if (items.length === 0) { container.innerHTML = '<div class="pm-empty">Todavía no ha subido nada.</div>'; return; }
+    container.innerHTML = items.map(function (it) {
+      var thumb = it.kind === 'post' ? '<img class="act-thumb" src="' + esc(publicUrl(it.data.image_path)) + '" alt="" loading="lazy" />' : '<div class="act-icon">' + ACT_ICON[it.kind] + '</div>';
+      return '<div class="act-item">' + thumb +
+        '<div class="act-body">' +
+          '<div class="act-kind">' + ACT_KIND[it.kind] + '</div>' +
+          '<div class="act-text">' + esc(actText(it)) + '</div>' +
+          '<div class="act-time">' + esc(fmtRel(it.created)) + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+  function renderMyActivity() { renderActivity($('profile-activity'), state.userId); }
+
+  function updateSidebarAvatar() {
+    var box = document.querySelector('.sidebar-user');
+    if (!box) return;
+    var icon = box.querySelector('i, .avatar');
+    var html = avatarHtml(state.userId, 'av-sm');
+    if (icon) icon.outerHTML = html;
+  }
+
+  /* ============================================================
+     PERFIL PÚBLICO (al tocar al autor de una publicación)
+  ============================================================ */
+  function openProfileModal(uid) {
+    var p = state.profilesById[uid] || {};
+    var rows = '';
+    function row(label, val) { return val ? '<div class="pm-row"><span class="pm-label">' + label + '</span><span class="pm-val">' + esc(val) + '</span></div>' : ''; }
+    rows += row('Correo', p.email);
+    rows += row('Número', p.phone);
+    rows += row('Edad', p.age != null ? p.age : '');
+    rows += row('Deportes', p.sports);
+    rows += row('Descripción', p.bio);
+    if (!rows) rows = '<div class="pm-empty">Sin datos por ahora.</div>';
+    var since = p.created ? 'Miembro desde ' + new Date(p.created).toLocaleDateString('es-PE', { month: 'long', year: 'numeric' }) : '';
+    $('pm-body').innerHTML =
+      '<div class="pm-head">' + avatarHtml(uid, 'av-lg') +
+        '<div class="pm-name">' + esc(p.name || 'Miembro') + '</div>' +
+        (since ? '<div class="pm-sub">' + esc(since) + '</div>' : '') +
+      '</div>' +
+      '<h3 class="pm-section">Datos</h3>' +
+      '<div class="pm-data">' + rows + '</div>' +
+      '<h3 class="pm-section">Actividad</h3>' +
+      '<div id="pm-activity"></div>';
+    renderActivity($('pm-activity'), uid);
+    $('profile-modal').hidden = false;
+  }
+  function closeProfileModal() { $('profile-modal').hidden = true; }
 
   /* ============================================================
      ADMIN
@@ -589,12 +709,17 @@
     try { var res = await sb.rpc('is_admin'); state.isAdmin = !res.error && res.data === true; }
     catch (e) { state.isAdmin = false; }
   }
-  async function loadAdmin() {
-    if (!state.isAdmin) return;
+  // Carga TODOS los perfiles (ahora visibles para cualquier miembro):
+  // se usan para los avatares, los nombres de autor y los perfiles públicos.
+  async function loadProfiles() {
     var res = await sb.from('profiles').select('*').order('created', { ascending: true });
     if (res.error) { console.error(res.error); return; }
     state.profiles = res.data || [];
-    renderAdmin();
+    state.profilesById = {};
+    state.profiles.forEach(function (p) { state.profilesById[p.id] = p; });
+    // Re-render para que aparezcan los avatares/nombres que acaban de llegar.
+    renderPosts(); renderLog(); renderPlans(); renderRoutes(); renderAdmin(); renderMyActivity();
+    updateSidebarAvatar();
   }
   function renderAdmin() {
     if (!state.isAdmin) return;
@@ -643,9 +768,10 @@
 
   function wireCardClicks() {
     document.body.addEventListener('click', async function (ev) {
-      var t = ev.target.closest('[data-join],[data-del-plan],[data-del-log],[data-del-route],[data-purge],[data-react],[data-comments],[data-emoji],[data-comment-send],[data-del-comment],[data-del-post],[data-zoom]');
+      var t = ev.target.closest('[data-join],[data-del-plan],[data-del-log],[data-del-route],[data-purge],[data-react],[data-comments],[data-emoji],[data-comment-send],[data-del-comment],[data-del-post],[data-zoom],[data-profile]');
       if (!t) return;
 
+      if (t.dataset.profile) { openProfileModal(t.dataset.profile); return; }
       if (t.dataset.zoom) {
         var ov = document.createElement('div'); ov.className = 'lightbox';
         var im = document.createElement('img'); im.src = t.dataset.zoom; ov.appendChild(im);
@@ -703,7 +829,7 @@
         await sb.from('routes').delete().eq('user_id', uid);
         await sb.from('posts').delete().eq('user_id', uid);
         await Promise.all([loadPlans(), loadLog(), loadRoutes(), loadPosts()]);
-        await loadAdmin();
+        await loadProfiles();
         toast('Contenido de ' + nombre + ' eliminado', 'ti-trash'); return;
       }
       if (t.dataset.join) {
@@ -745,7 +871,7 @@
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, loadPosts)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'post_reactions' }, loadPosts)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'post_comments' }, loadPosts)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, loadAdmin)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, loadProfiles)
       .subscribe();
   }
 
@@ -753,7 +879,7 @@
      Navegación (sidebar / vistas)
   ============================================================ */
   var VIEWS = ['semana', 'muro', 'bitacora', 'rutas', 'perfil', 'admin'];
-  var VIEW_TITLES = { semana: 'Esta semana', muro: 'Muro', bitacora: 'Bitácora', rutas: 'Rutas y lugares', perfil: 'Mi Perfil', admin: 'Panel de admin' };
+  var VIEW_TITLES = { semana: 'Esta semana', muro: 'Muro', bitacora: 'Block de Patas', rutas: 'Rutas y lugares', perfil: 'Mi Perfil', admin: 'Panel de admin' };
   function closeSidebar() { $('sidebar').classList.remove('open'); $('nav-overlay').classList.remove('show'); }
   function showView(v) {
     currentView = v;
@@ -763,12 +889,14 @@
     closeSidebar();
     window.scrollTo(0, 0);
     if (v === 'rutas') setTimeout(initRouteMaps, 60);
-    if (v === 'perfil' && !state.profile) loadProfile();
+    if (v === 'perfil') { loadProfile(); renderMyActivity(); }
   }
   function wireNav() {
     document.querySelectorAll('.nav-item[data-view]').forEach(function (b) { b.onclick = function () { showView(b.dataset.view); }; });
     $('nav-toggle').onclick = function () { $('sidebar').classList.add('open'); $('nav-overlay').classList.add('show'); };
     $('nav-overlay').onclick = closeSidebar;
+    $('pm-close').onclick = closeProfileModal;
+    $('profile-modal').onclick = function (e) { if (e.target === this) closeProfileModal(); };
   }
 
   /* ---------- Huellas en el sidebar ---------- */
@@ -804,6 +932,7 @@
 
   async function showApp(user) {
     state.userId = user.id;
+    state.authEmail = user.email || '';
     state.me = (user.user_metadata && user.user_metadata.display_name) || user.email.split('@')[0];
     document.querySelectorAll('.me-name').forEach(function (e) { e.textContent = state.me; });
     $('auth-screen').hidden = true;
@@ -819,6 +948,7 @@
     $('admin-badge').hidden = !state.isAdmin;
     $('nav-admin').hidden = !state.isAdmin;
     loadAll();
+    loadProfiles();
     loadProfile();
   }
 
