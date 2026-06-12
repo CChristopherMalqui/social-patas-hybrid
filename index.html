@@ -5,15 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Social Patas Hybrid</title>
 <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="icon" href="logoSPH.jpeg" />
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+<!--
+  ============================================================
+   GUÍA RÁPIDA DE ESTE ARCHIVO (index.html = la ESTRUCTURA)
+  ------------------------------------------------------------
+   • Aquí está el TEXTO y el ORDEN de la página.
+   • Los COLORES se cambian en  styles.css  (arriba del todo, en :root).
+   • La LÓGICA (qué hace cada botón) está en  app.js.
+   • Para cambiar un TÍTULO, busca el texto entre <h1>, <h2> o <h1 class="view-title">.
+   • Para cambiar un MENÚ (barra lateral), edita el texto de los .nav-item más abajo.
+   • Las pantallas están marcadas como <!-- VISTA: ... -->
+  ============================================================
+-->
 
 <!-- ===================== PANTALLA DE LOGIN / REGISTRO ===================== -->
 <div class="auth-screen" id="auth-screen" hidden>
   <div class="auth-card">
     <img class="auth-logo-img" src="logoSPH.jpeg" alt="Social Patas Hybrid" />
+    <!-- 👇 Título y frase de bienvenida de la pantalla de inicio de sesión -->
     <h1>Social Patas Hybrid</h1>
     <p class="auth-sub">Entra brother</p>
 
@@ -41,168 +55,254 @@
   </div>
 </div>
 
-<!-- ===================== APP ===================== -->
-<div class="wrap" id="app" hidden>
-  <header class="hero">
+<!-- ===================== APP (shell con sidebar) ===================== -->
+<div class="app-shell" id="app" hidden>
+
+  <!-- ---------- Sidebar ---------- -->
+  <aside class="sidebar" id="sidebar">
     <div class="paws" id="paws" aria-hidden="true"></div>
-    <div class="hero-inner">
-      <div class="brand-group">
-        <img class="brand-logo" src="logoSPH.jpeg" alt="Social Patas Hybrid" />
-        <div class="brand">
-          <h1>Social Patas Hybrid</h1>
-          <p>Corremos, levantamos, caminamos — juntos.</p>
-        </div>
-      </div>
-      <div class="me" id="me-box">
-        <i class="ti ti-user" aria-hidden="true"></i>
+    <div class="sidebar-top">
+      <img class="sidebar-logo" src="logoSPH.jpeg" alt="Social Patas Hybrid" />
+      <!-- 👇 Nombre que aparece arriba en la barra lateral (<br/> = salto de línea) -->
+      <div class="sidebar-brand">Social Patas<br/>Hybrid</div>
+    </div>
+
+    <!--
+      MENÚ LATERAL. Cada botón es una "pantalla".
+      - El texto después del <i...></i> es el nombre que se ve en el menú (puedes cambiarlo).
+      - data-view="..." NO se cambia: es el nombre interno que conecta con app.js.
+      - El ícono <i class="ti ti-..."></i> sale de https://tabler.io/icons (cambia el "ti-...").
+      - El botón "Admin" está hidden: solo aparece para administradores.
+    -->
+    <nav class="nav" id="nav">
+      <button class="nav-item" data-view="semana"><i class="ti ti-calendar"></i> Esta semana</button>
+      <button class="nav-item" data-view="muro"><i class="ti ti-photo"></i> Muro</button>
+      <button class="nav-item" data-view="bitacora"><i class="ti ti-notebook"></i> Bitácora</button>
+      <button class="nav-item" data-view="rutas"><i class="ti ti-map-pin"></i> Rutas</button>
+      <button class="nav-item" data-view="perfil"><i class="ti ti-user-circle"></i> Mi Perfil</button>
+      <button class="nav-item" data-view="admin" id="nav-admin" hidden><i class="ti ti-shield-lock"></i> Admin</button>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <i class="ti ti-user"></i>
         <span class="me-name" id="me-name"></span>
         <span class="admin-badge" id="admin-badge" hidden>ADMIN</span>
-        <button class="me-logout" id="logout-btn" title="Cerrar sesión" aria-label="Cerrar sesión"><i class="ti ti-logout"></i></button>
       </div>
+      <button class="nav-item logout" id="logout-btn"><i class="ti ti-logout"></i> Cerrar sesión</button>
     </div>
-    <div class="stats" id="stats">
-      <div class="stat"><div class="num" data-stat="plans">0</div><div class="lbl">Esta semana</div></div>
-      <div class="stat"><div class="num" data-stat="logs">0</div><div class="lbl">Entrenos</div></div>
-      <div class="stat"><div class="num" data-stat="routes">0</div><div class="lbl">Rutas</div></div>
-      <div class="stat"><div class="num" data-stat="joins">0</div><div class="lbl">Apuntados</div></div>
-    </div>
-  </header>
+  </aside>
+  <div class="nav-overlay" id="nav-overlay"></div>
 
-  <div class="section">
-    <div class="section-head">
-      <h2><i class="ti ti-calendar"></i> Esta semana</h2>
-      <button class="btn toggle-btn" id="plan-toggle">+ Proponer</button>
-    </div>
-    <div class="form-collapse" id="plan-form">
-      <div class="form"><div class="form-inner">
-        <div class="row">
-          <input type="date" id="plan-date" />
-          <input type="time" id="plan-time" />
-        </div>
-        <div class="row">
-          <select id="plan-type">
-            <option value="run">Running</option>
-            <option value="gym">Gym</option>
-            <option value="cali">Calistenia</option>
-            <option value="walk">Caminata</option>
-          </select>
-          <input type="text" id="plan-where" placeholder="Dónde" />
-        </div>
-        <textarea id="plan-notes" placeholder="Detalles opcionales: ritmo, qué llevar, punto de encuentro..."></textarea>
-        <div class="form-actions">
-          <button class="btn" id="plan-cancel">Cancelar</button>
-          <button class="btn btn-primary" id="plan-save">Guardar propuesta</button>
-        </div>
-      </div></div>
-    </div>
-    <div id="plan-list"></div>
-  </div>
+  <!-- ---------- Contenido ---------- -->
+  <main class="content">
+    <header class="topbar">
+      <button class="nav-toggle" id="nav-toggle" aria-label="Menú"><i class="ti ti-menu-2"></i></button>
+      <h1 class="view-title" id="view-title">Esta semana</h1>
+    </header>
 
-  <hr class="divider" />
-
-  <div class="section" id="wall-section" style="margin-top: 2rem;">
-    <div class="section-head">
-      <h2><i class="ti ti-photo"></i> Muro</h2>
-      <button class="btn toggle-btn" id="post-toggle">+ Publicar</button>
-    </div>
-    <div class="form-collapse" id="post-form">
-      <div class="form"><div class="form-inner">
-        <label class="file-drop" id="post-drop" for="post-file">
-          <i class="ti ti-camera"></i>
-          <span id="post-drop-text">Elige una foto</span>
-        </label>
-        <input type="file" id="post-file" accept="image/*" hidden />
-        <div class="post-preview" id="post-preview" hidden>
-          <img id="post-preview-img" alt="Vista previa" />
-        </div>
-        <textarea id="post-caption" placeholder="Escribe algo sobre la foto... (opcional)"></textarea>
-        <div class="form-actions">
-          <button class="btn" id="post-cancel">Cancelar</button>
-          <button class="btn btn-primary" id="post-save">Publicar</button>
-        </div>
-      </div></div>
-    </div>
-    <div id="post-list"></div>
-  </div>
-
-  <hr class="divider" />
-
-  <div class="section" style="margin-top: 2rem;">
-    <div class="section-head">
-      <h2><i class="ti ti-notebook"></i> ¿Como estuvo? Escribe como te sientes aqui.</h2>
-      <button class="btn toggle-btn" id="log-toggle">+ Escribir</button>
-    </div>
-    <div class="form-collapse" id="log-form">
-      <div class="form"><div class="form-inner">
-        <select id="log-type">
-          <option value="run">Running</option>
-          <option value="gym">Gym</option>
-          <option value="cali">Calistenia</option>
-          <option value="walk">Caminata</option>
-          <option value="other">Otro</option>
-        </select>
-        <textarea id="log-content" placeholder="¿Cómo estuvo? ¿Quiénes vinieron? Una anécdota, un momento, algo que aprendiste..."></textarea>
-        <div class="form-actions">
-          <button class="btn" id="log-cancel">Cancelar</button>
-          <button class="btn btn-primary" id="log-save">Publicar</button>
-        </div>
-      </div></div>
-    </div>
-    <div id="log-list"></div>
-  </div>
-
-  <hr class="divider" />
-
-  <div class="section" style="margin-top: 2rem;">
-    <div class="section-head">
-      <h2><i class="ti ti-map-pin"></i> Rutas y lugares</h2>
-      <button class="btn toggle-btn" id="route-toggle">+ Agregar</button>
-    </div>
-    <div class="form-collapse" id="route-form">
-      <div class="form"><div class="form-inner">
-        <input type="text" id="route-name" placeholder="Nombre del lugar o ruta" />
-        <div class="row">
-          <select id="route-type">
-            <option value="run">Running</option>
-            <option value="walk">Caminata</option>
-            <option value="gym">Gym</option>
-            <option value="cali">Calistenia</option>
-          </select>
-          <input type="text" id="route-dist" placeholder="Distancia o duración" />
-        </div>
-        <textarea id="route-notes" placeholder="Tips del lugar: cuándo ir, qué llevar, qué evitar..."></textarea>
-        <div class="form-actions">
-          <button class="btn" id="route-cancel">Cancelar</button>
-          <button class="btn btn-primary" id="route-save">Guardar</button>
-        </div>
-      </div></div>
-    </div>
-    <div id="route-list"></div>
-  </div>
-
-  <!-- ===================== PANEL DE ADMIN (solo visible para admin) ===================== -->
-  <div class="section admin-section" id="admin-section" hidden style="margin-top: 2rem;">
-    <hr class="divider" />
-    <div class="section-head" style="margin-top: 2rem;">
-      <h2><i class="ti ti-shield-lock"></i> Panel de admin</h2>
-      <button class="btn toggle-btn" id="admin-toggle">Mostrar</button>
-    </div>
-    <div class="form-collapse" id="admin-panel">
-      <div class="admin-body">
-        <div class="admin-global" id="admin-global"></div>
-        <h3 class="admin-h3"><i class="ti ti-users"></i> Usuarios registrados</h3>
-        <div id="admin-users"></div>
+    <!-- ============ VISTA: Esta semana ============ -->
+    <!-- (Cada <section class="view"> es una pantalla. Solo se ve una a la vez.) -->
+    <section class="view" id="view-semana">
+      <!-- Las 4 tarjetas de números de arriba. El texto en .lbl es la etiqueta. -->
+      <div class="stats" id="stats">
+        <div class="stat"><div class="num" data-stat="plans">0</div><div class="lbl">Esta semana</div></div>
+        <div class="stat"><div class="num" data-stat="logs">0</div><div class="lbl">Entrenos</div></div>
+        <div class="stat"><div class="num" data-stat="routes">0</div><div class="lbl">Rutas</div></div>
+        <div class="stat"><div class="num" data-stat="joins">0</div><div class="lbl">Apuntados</div></div>
       </div>
-    </div>
-  </div>
 
-  <p class="footer">Desarrollado por SYSTEMS DEV'S - CEO Christopher Malqui</p>
+      <div class="section">
+        <div class="section-head">
+          <!-- 👇 Título de esta sección y texto del botón para abrir el formulario -->
+          <h2><i class="ti ti-calendar"></i> Próximos entrenos</h2>
+          <button class="btn toggle-btn" id="plan-toggle">+ Proponer</button>
+        </div>
+        <div class="form-collapse" id="plan-form">
+          <div class="form"><div class="form-inner">
+            <div class="row">
+              <input type="date" id="plan-date" />
+              <input type="time" id="plan-time" />
+            </div>
+            <div class="row">
+              <select id="plan-type">
+                <option value="run">Running</option>
+                <option value="gym">Gym</option>
+                <option value="cali">Calistenia</option>
+                <option value="walk">Caminata</option>
+              </select>
+              <input type="text" id="plan-where" placeholder="Dónde" />
+            </div>
+            <textarea id="plan-notes" placeholder="Detalles opcionales: ritmo, qué llevar, punto de encuentro..."></textarea>
+            <div class="form-actions">
+              <button class="btn" id="plan-cancel">Cancelar</button>
+              <button class="btn btn-primary" id="plan-save">Guardar propuesta</button>
+            </div>
+          </div></div>
+        </div>
+        <div id="plan-list"></div>
+      </div>
+    </section>
+
+    <!-- ============ VISTA: Muro (fotos) ============ -->
+    <section class="view" id="view-muro" hidden>
+      <div class="section">
+        <div class="section-head">
+          <h2><i class="ti ti-photo"></i> Muro</h2>
+          <button class="btn toggle-btn" id="post-toggle">+ Publicar</button>
+        </div>
+        <div class="form-collapse" id="post-form">
+          <div class="form"><div class="form-inner">
+            <label class="file-drop" id="post-drop" for="post-file">
+              <i class="ti ti-camera"></i>
+              <span id="post-drop-text">Elige una foto</span>
+            </label>
+            <input type="file" id="post-file" accept="image/*" hidden />
+            <div class="post-preview" id="post-preview" hidden>
+              <img id="post-preview-img" alt="Vista previa" />
+            </div>
+            <textarea id="post-caption" placeholder="Escribe algo sobre la foto... (opcional)"></textarea>
+            <div class="form-actions">
+              <button class="btn" id="post-cancel">Cancelar</button>
+              <button class="btn btn-primary" id="post-save">Publicar</button>
+            </div>
+          </div></div>
+        </div>
+        <div id="post-list"></div>
+      </div>
+    </section>
+
+    <!-- ============ VISTA: Bitácora ============ -->
+    <section class="view" id="view-bitacora" hidden>
+      <div class="section">
+        <div class="section-head">
+          <h2><i class="ti ti-notebook"></i> Escribe lo que necesites aquí</h2>
+          <button class="btn toggle-btn" id="log-toggle">+ Escribir</button>
+        </div>
+        <div class="form-collapse" id="log-form">
+          <div class="form"><div class="form-inner">
+            <select id="log-type">
+              <option value="run">Running</option>
+              <option value="gym">Gym</option>
+              <option value="cali">Calistenia</option>
+              <option value="walk">Caminata</option>
+              <option value="other">Otro</option>
+            </select>
+            <textarea id="log-content" placeholder="¿Cómo estuvo? ¿Quiénes vinieron? Una anécdota, un momento, algo que aprendiste..."></textarea>
+            <div class="form-actions">
+              <button class="btn" id="log-cancel">Cancelar</button>
+              <button class="btn btn-primary" id="log-save">Publicar</button>
+            </div>
+          </div></div>
+        </div>
+        <div id="log-list"></div>
+      </div>
+    </section>
+
+    <!-- ============ VISTA: Rutas (con mapa) ============ -->
+    <section class="view" id="view-rutas" hidden>
+      <div class="section">
+        <div class="section-head">
+          <h2><i class="ti ti-map-pin"></i> Rutas y lugares</h2>
+          <button class="btn toggle-btn" id="route-toggle">+ Agregar</button>
+        </div>
+        <div class="form-collapse" id="route-form">
+          <div class="form"><div class="form-inner">
+            <input type="text" id="route-name" placeholder="Nombre del lugar o ruta" />
+            <div class="row">
+              <select id="route-type">
+                <option value="run">Running</option>
+                <option value="walk">Caminata</option>
+                <option value="gym">Gym</option>
+                <option value="cali">Calistenia</option>
+              </select>
+              <input type="text" id="route-dist" placeholder="Distancia o duración" />
+            </div>
+            <textarea id="route-notes" placeholder="Tips del lugar: cuándo ir, qué llevar, qué evitar..."></textarea>
+            <label class="picker-label"><i class="ti ti-map-2"></i> Marca el punto en el mapa (opcional)</label>
+            <div class="picker-map" id="route-picker-map"></div>
+            <div class="picker-row">
+              <button type="button" class="btn" id="route-locate"><i class="ti ti-current-location"></i> Mi ubicación</button>
+              <span class="picker-hint" id="route-picker-hint">Toca el mapa para marcar</span>
+            </div>
+            <input type="hidden" id="route-lat" />
+            <input type="hidden" id="route-lng" />
+            <div class="form-actions">
+              <button class="btn" id="route-cancel">Cancelar</button>
+              <button class="btn btn-primary" id="route-save">Guardar</button>
+            </div>
+          </div></div>
+        </div>
+        <div id="route-list"></div>
+      </div>
+    </section>
+
+    <!-- ============ VISTA: Mi Perfil ============ -->
+    <!-- Cada <label class="field-label"> es el nombre de un campo del perfil. -->
+    <section class="view" id="view-perfil" hidden>
+      <div class="section">
+        <div class="section-head">
+          <h2><i class="ti ti-user-circle"></i> Mi Perfil</h2>
+        </div>
+        <div class="profile-card">
+          <div class="profile-avatar" id="profile-avatar">🐾</div>
+          <div class="profile-form">
+            <label class="field-label">Nombre</label>
+            <input type="text" id="profile-name" placeholder="Tu nombre" />
+
+            <label class="field-label">Correo</label>
+            <input type="email" id="profile-email" placeholder="tucorreo@ejemplo.com" />
+
+            <div class="row">
+              <div>
+                <label class="field-label">Número</label>
+                <input type="tel" id="profile-phone" placeholder="Ej. 999 999 999" />
+              </div>
+              <div>
+                <label class="field-label">Edad</label>
+                <input type="number" id="profile-age" min="1" max="120" placeholder="Ej. 27" />
+              </div>
+            </div>
+
+            <label class="field-label">Deportes que practicas</label>
+            <input type="text" id="profile-sports" placeholder="Ej. Running, Gym, Calistenia" />
+
+            <label class="field-label">Descripción</label>
+            <textarea id="profile-bio" placeholder="Cuéntanos algo de ti: tus metas, tu nivel, lo que te motiva..."></textarea>
+
+            <div class="form-actions">
+              <button class="btn btn-primary" id="profile-save">Guardar cambios</button>
+            </div>
+            <p class="profile-since" id="profile-since"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VISTA: Admin -->
+    <section class="view" id="view-admin" hidden>
+      <div class="section admin-section">
+        <div class="section-head">
+          <h2><i class="ti ti-shield-lock"></i> Panel de admin</h2>
+        </div>
+        <div class="admin-body">
+          <div class="admin-global" id="admin-global"></div>
+          <h3 class="admin-h3"><i class="ti ti-users"></i> Usuarios registrados</h3>
+          <div id="admin-users"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 👇 Pie de página (aparece abajo en todas las pantallas) -->
+    <p class="footer">Desarrollado por SYSTEMS DEV'S - CEO Christopher Malqui</p>
+  </main>
 </div>
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<!-- Cliente de Supabase (CDN) + tu configuración + la app -->
+<!-- Librerías (CDN) + tu configuración + la app -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
 </body>
