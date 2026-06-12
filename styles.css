@@ -327,8 +327,10 @@ body { padding: 0; }
 /* ---------- Selector de emojis ---------- */
 .comment-form .emoji-btn { background: transparent; border: 1px solid var(--border); color: var(--text-2); border-radius: 999px; width: 38px; flex-shrink: 0; cursor: pointer; font-size: 16px; }
 .comment-form .emoji-btn:hover { border-color: var(--accent); }
-.emoji-panel { position: fixed; z-index: 1001; display: none; grid-template-columns: repeat(6, 1fr); gap: 2px; width: 232px; padding: 8px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-md); box-shadow: var(--shadow-lift); }
-.emoji-panel button { background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 5px; border-radius: 6px; line-height: 1; }
+/* Cuadrícula de emojis: celdas de tamaño FIJO (34px) para que nunca se desborden.
+   max-height + scroll por si algún día hay muchísimos emojis. */
+.emoji-panel { position: fixed; z-index: 1001; display: none; grid-template-columns: repeat(6, 34px); gap: 3px; padding: 8px; max-height: 60vh; overflow-y: auto; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-md); box-shadow: var(--shadow-lift); }
+.emoji-panel button { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; font-size: 19px; cursor: pointer; padding: 0; border-radius: 6px; line-height: 1; }
 .emoji-panel button:hover { background: var(--surface-2); }
 
 /* ============================================================
@@ -405,3 +407,11 @@ body { padding: 0; }
 .pm-row .pm-label { color: var(--text-3); min-width: 92px; flex-shrink: 0; }
 .pm-row .pm-val { color: var(--text); word-break: break-word; }
 .pm-empty { font-size: 13px; color: var(--text-3); font-style: italic; font-family: var(--font-serif); }
+
+/* ============================================================
+   Evita que la página se "arrastre"/desborde de lado en celular.
+   (overflow-x: hidden = nada puede salirse hacia los costados)
+   ============================================================ */
+html, body { overflow-x: hidden; max-width: 100%; }
+.app-shell { overflow-x: hidden; }
+.content { max-width: 100%; }

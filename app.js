@@ -400,8 +400,7 @@
   '👀', '🤔', '😤', '🥵', '😮',
   '😱', '🤯', '😅', '🙏', '🤙',
   '🏃‍♂️', '🏋️‍♂️', '🚴‍♂️', '🧠', '💸',
-  '🍗', '🥩', '🥦', '💧', '🌙'
-];
+  '🍗', '🥩', '🥦', '💧', '🌙'];
   var emojiPanel = null, emojiTargetId = null;
   function openEmoji(btn, postId) {
     emojiTargetId = postId;
@@ -423,7 +422,8 @@
     }
     emojiPanel.style.display = 'grid';
     var r = btn.getBoundingClientRect();
-    var ph = emojiPanel.offsetHeight || 150, pw = 232;
+    // Medimos el panel REAL (ya visible) para que nunca se salga de la pantalla.
+    var ph = emojiPanel.offsetHeight || 150, pw = emojiPanel.offsetWidth || 232;
     var top = r.top - ph - 6; if (top < 8) top = r.bottom + 6;
     var left = Math.min(r.left, window.innerWidth - pw - 8); if (left < 8) left = 8;
     emojiPanel.style.top = top + 'px';
