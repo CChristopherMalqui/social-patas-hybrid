@@ -187,7 +187,7 @@
         (p.notes ? '<div class="notes">' + esc(p.notes) + '</div>' : '') +
         '<div class="joiners">' +
           joining.map(function (j) { return '<span class="chip">' + esc(j.name) + '</span>'; }).join('') +
-          '<button class="join-btn ' + (isIn ? 'in' : '') + '" data-join="' + p.id + '">' + (isIn ? '− me bajo' : '+ me apunto') + '</button>' +
+          '<button class="join-btn ' + (isIn ? 'in' : '') + '" data-join="' + p.id + '">' + (isIn ? '− No llego' : '+ Si llego') + '</button>' +
         '</div>' +
       '</div>';
     }).join('');
@@ -391,7 +391,17 @@
 
   /* ---------- Selector de emojis ---------- */
   // ⚙️ EMOJIS del selector (al costado de enviar comentario). Agrega/quita los que quieras.
-  var EMOJIS = ['🔥', '💪', '👏', '😂', '😍', '🙌', '🥵', '🏃', '🏋️', '🚶', '🤙', '✅', '❤️', '😎', '🎉', '👀', '🥇', '😅', '🙏', '💀', '🤔', '😤', '🦵', '⚡'];
+  var EMOJIS = [
+  '🔥', '💪', '🗿', '💀', '😂',
+  '😭', '🥹', '😮‍💨', '😎', '🤝',
+  '🙌', '👏', '❤️', '🫶', '✨',
+  '⚡', '🚀', '🎯', '🏆', '🥇',
+  '📈', '📉', '💯', '✅', '⭐',
+  '👀', '🤔', '😤', '🥵', '😮',
+  '😱', '🤯', '😅', '🙏', '🤙',
+  '🏃‍♂️', '🏋️‍♂️', '🚴‍♂️', '🧠', '💸',
+  '🍗', '🥩', '🥦', '💧', '🌙'
+];
   var emojiPanel = null, emojiTargetId = null;
   function openEmoji(btn, postId) {
     emojiTargetId = postId;
